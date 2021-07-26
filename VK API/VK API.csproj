@@ -37,7 +37,8 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="example.cs" />
+    <Compile Include="examples.cs" />
+    <Compile Include="main.cs" />
     <Compile Include="VkApi.cs" />
   </ItemGroup>
   <ItemGroup>

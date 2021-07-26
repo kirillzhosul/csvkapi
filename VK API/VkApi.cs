@@ -20,14 +20,14 @@ namespace vkapi
 
         // JSON.
 
-        class JsonLongpollServer
+        protected class JsonLongpollServer
         {
             // Fields.
 
             public JsonLongpollServerResponse response { get; set; }
         }
 
-        class JsonLongpollServerResponse
+        protected class JsonLongpollServerResponse
 
         {
             // Fields.
@@ -39,7 +39,7 @@ namespace vkapi
             public string server { get; set; }
         }
 
-        class JsonLongpollUpdates
+        protected class JsonLongpollUpdates
         {
             // Fields.
 
@@ -221,6 +221,12 @@ namespace vkapi
         {
             // Returning response.
             return UrlGet($"{_urlMethod}/{name}?{_urlDefaultParameters}");
+        }
+
+        public string Method(string name, string[] arguments)
+        {
+            // Returning response.
+            return UrlGet($"{_urlMethod}/{name}?{_urlDefaultParameters}&{string.Join("&", arguments)}");
         }
 
         // Other.
