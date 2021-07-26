@@ -1,57 +1,45 @@
-﻿using vkapi;
-
-namespace vkapi_examples
+﻿namespace vkapi
 {
-    class main
+    namespace examples
     {
-        private const string ACCESS_TOKEN_USER = "";
-        private const string ACCESS_TOKEN_GROUP = "";
+        using events;
 
-        private const int GROUP_INDEX = 0;
-
-        public static void Main(string[] args)
+        class EchoBot
         {
-            // New echo bot.
-            new EchoBot(ACCESS_TOKEN_GROUP, GROUP_INDEX);
+            public EchoBot(string accessToken, int groupIndex)
+            {
+                // Creating api.
+                VkApiBotLongpoll api = new VkApiBotLongpoll(accessToken, groupIndex);
 
-            // New echo user.
-            //new EchoUser(ACCESS_TOKEN_USER);
+                // Subscribing on new messages.
+                api.EventSubscribeType("message_new");
+
+                // Starting listening with sending out.
+                api.ListenLongpoll((IEvent updateEvent) =>
+                {
+                    EventMessageNew updateMessage = (EventMessageNew)updateEvent;
+                    VkApiMethods.MessagesSend(api, updateMessage.message.Text, updateMessage.message.FromId);
+                });
+            }
         }
-    }
 
-    class EchoBot
-    {
-        public EchoBot(string accessToken, int groupIndex)
+        class EchoUser
         {
-            // Creating api.
-            VkApiBotLongpoll api = new VkApiBotLongpoll(accessToken, groupIndex);
+            public EchoUser(string accessToken)
+            {
+                // Creating api.
+                VkApiUserLongpoll api = new VkApiUserLongpoll(accessToken);
 
-            // Subscribing on new messages.
-            api.EventSubscribeType("message_new");
+                // Subscribing on new messages.
+                api.EventSubscribeType("message_new");
 
-            // Starting listening with sending out.
-            api.ListenLongpoll((Event update) => {
-                EventMessageNew message = (EventMessageNew)update;
-                VkApiMethods.MessagesSend(api, message.message.text, message.message.fromId); 
-            });
-        }
-    }
-
-    class EchoUser
-    {
-        public EchoUser(string accessToken)
-        {
-            // Creating api.
-            VkApiUserLongpoll api = new VkApiUserLongpoll(accessToken);
-
-            // Subscribing on new messages.
-            api.EventSubscribeType("message_new");
-
-            // Starting listening with sending out.
-            api.ListenLongpoll((Event update) => {
-                EventMessageNew message = (EventMessageNew)update;
-                VkApiMethods.MessagesSend(api, message.message.text, message.message.fromId);
-            });
+                // Starting listening with sending out.
+                api.ListenLongpoll((IEvent update) =>
+                {
+                    EventMessageNew message = (EventMessageNew)update;
+                    VkApiMethods.MessagesSend(api, message.message.Text, message.message.FromId);
+                });
+            }
         }
     }
 }

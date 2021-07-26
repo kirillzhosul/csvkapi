@@ -10,6 +10,9 @@ using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+// Local.
+using vkapi.events;
+
 #endregion
 
 namespace vkapi
@@ -26,7 +29,7 @@ namespace vkapi
 
             // Server response.
             [JsonProperty("response")]
-            public JsonLongpollServerResponse response { get; set; }
+            public JsonLongpollServerResponse Response { get; set; }
         }
 
         protected class JsonLongpollServerResponse
@@ -35,15 +38,15 @@ namespace vkapi
 
             // Key for request.
             [JsonProperty("key")]
-            public string key { get; set; }
+            public string Key { get; set; }
 
             // TS for getting only latest update.
             [JsonProperty("ts")]
-            public string ts { get; set; }
+            public string Ts { get; set; }
 
             // Server URL.
             [JsonProperty("server")]
-            public string server { get; set; }
+            public string Server { get; set; }
         }
 
         protected class JsonLongpollUpdates
@@ -52,11 +55,11 @@ namespace vkapi
 
             // TS for updating our ts.
             [JsonProperty("ts")]
-            public string ts { get; set; }
+            public string Ts { get; set; }
 
             // Updates list.
             [JsonProperty("updates")]
-            public List<Dictionary<string, dynamic>> updates { get; set; }
+            public List<Dictionary<string, dynamic>> Updates { get; set; }
 
             // Raw response.
             public string raw;
@@ -82,7 +85,7 @@ namespace vkapi
         #region Delegates.
 
         // Declaring callback.
-        public delegate void CallbackDelegate(Event longpollEvent);
+        public delegate void CallbackDelegate(IEvent longpollEvent);
 
         #endregion
 
@@ -156,14 +159,14 @@ namespace vkapi
                     if (!EventTypeIsSubscribed(update.type)) continue;
 
                     // Parsing ?.
-                    Event updateEvent = ParseEvent(update);
+                    IEvent updateEvent = ParseEvent(update);
 
                     // Calling callback.
                     callback(updateEvent);
                 }
 
                 // Updating TS.
-                _longpollServer["ts"] = updates.ts;
+                _longpollServer["ts"] = updates.Ts;
             }
         }
 
@@ -171,7 +174,7 @@ namespace vkapi
 
         #region Parsers.
 
-        protected Event ParseEvent(JsonLongpollUpdate updateEvent)
+        protected IEvent ParseEvent(JsonLongpollUpdate updateEvent)
         {
             // Parsing.
 
@@ -191,14 +194,15 @@ namespace vkapi
             // New list.
             List<JsonLongpollUpdate> updatesParsed = new List<JsonLongpollUpdate>();
 
-            foreach (Dictionary<string, dynamic> update in updates.updates)
+            foreach (Dictionary<string, dynamic> update in updates.Updates)
             {
                 // New update.
-                JsonLongpollUpdate updateParsed = new JsonLongpollUpdate();
-
-                // Fields.
-                updateParsed.type = Convert.ToString(update["type"]);
-                updateParsed.object_ = update["object"];
+                JsonLongpollUpdate updateParsed = new JsonLongpollUpdate
+                {
+                    // Fields.
+                    type = Convert.ToString(update["type"]),
+                    object_ = update["object"]
+                };
 
                 // Adding.
                 updatesParsed.Add(updateParsed);
@@ -263,9 +267,9 @@ namespace vkapi
             // Setting server.
             _longpollServer = new Dictionary<string, string>()
             {
-                { "ts", longpollServer.response.ts },
-                { "url", "http://" + longpollServer.response.server },
-                { "key", longpollServer.response.key },
+                { "ts", longpollServer.Response.Ts },
+                { "url", "http://" + longpollServer.Response.Server },
+                { "key", longpollServer.Response.Key },
             };
         }
 
@@ -279,7 +283,7 @@ namespace vkapi
         #region Fields.
 
         // Group index.
-        private int _groupIndex;
+        private readonly int _groupIndex;
 
         #endregion
 
@@ -335,9 +339,9 @@ namespace vkapi
             // Setting server.
             _longpollServer = new Dictionary<string, string>()
             {
-                { "ts", longpollServer.response.ts },
-                { "url", longpollServer.response.server },
-                { "key", longpollServer.response.key },
+                { "ts", longpollServer.Response.Ts },
+                { "url", longpollServer.Response.Server },
+                { "key", longpollServer.Response.Key },
             };
         }
 

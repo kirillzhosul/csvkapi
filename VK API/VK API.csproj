@@ -39,6 +39,7 @@
   <ItemGroup>
     <Compile Include="VkApi\Events.cs" />
     <Compile Include="VkApi\Examples\examples.cs" />
+    <Compile Include="VkApi\Main.cs" />
     <Compile Include="VkApi\VkApi.cs" />
   </ItemGroup>
   <ItemGroup>

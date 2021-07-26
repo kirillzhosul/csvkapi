@@ -7,77 +7,80 @@ using Newtonsoft.Json;
 
 namespace vkapi
 {
-    public interface Event { };
-
-    public class EventMessageNew : Event
+    namespace events
     {
-        private class MessageContainer
+        public interface IEvent { };
+
+        public class EventMessageNew : IEvent
         {
-            [JsonProperty("message")]
-            public Message message { get; set; }
+            private class MessageContainer
+            {
+                [JsonProperty("message")]
+                public Message Message { get; set; }
+            }
+
+            public class Message
+            {
+                #region JSON Fields.
+
+                [JsonProperty("date")]
+                public long Date { get; set; }
+
+                [JsonProperty("from_id")]
+                public long FromId { get; set; }
+
+                [JsonProperty("id")]
+                public long Id { get; set; }
+
+                [JsonProperty("out")]
+                public bool IsOut { get; set; }
+
+                [JsonProperty("peer_id")]
+                public long PeerId { get; set; }
+
+                [JsonProperty("text")]
+                public string Text { get; set; }
+
+                [JsonProperty("conversation_message_id")]
+                public long ConversationMessageId { get; set; }
+
+                [JsonProperty("important")]
+                public bool Important { get; set; }
+
+                [JsonProperty("random_id")]
+                public long RandomId { get; set; }
+
+                [JsonProperty("is_hidden")]
+                public bool IsHidden { get; set; }
+
+                // fwd_messages
+                // attachments
+
+                #endregion
+            }
+
+            // Fields.
+
+            // Message object.
+            public Message message = null;
+
+            public EventMessageNew(VkApiLongpoll.JsonLongpollUpdate updateEvent)
+            {
+                // Converting.
+                message = JsonConvert.DeserializeObject<MessageContainer>(updateEvent.object_.ToString()).Message;
+            }
         }
 
-        public class Message
+        public class EventUnknown : IEvent
         {
-            #region JSON Fields.
+            // Update object.
+            public VkApiLongpoll.JsonLongpollUpdate update;
 
-            [JsonProperty("date")]
-            public long date { get; set; }
-
-            [JsonProperty("from_id")]
-            public long fromId { get; set; }
-
-            [JsonProperty("id")]
-            public long id { get; set; }
-
-            [JsonProperty("out")]
-            public bool isOut { get; set; }
-
-            [JsonProperty("peer_id")]
-            public long peerId { get; set; }
-
-            [JsonProperty("text")]
-            public string text { get; set; }
-
-            [JsonProperty("conversation_message_id")]
-            public long conversationMessageId { get; set; }
-
-            [JsonProperty("important")]
-            public bool important { get; set; }
-
-            [JsonProperty("random_id")]
-            public long randomId { get; set; }
-
-            [JsonProperty("is_hidden")]
-            public bool isHidden { get; set; }
-
-            // fwd_messages
-            // attachments
-
-            #endregion
-        }
-
-        // Fields.
-
-        // Message object.
-        public Message message = null;
-
-        public EventMessageNew(VkApiLongpoll.JsonLongpollUpdate updateEvent)
-        {
-            // Converting.
-            message = JsonConvert.DeserializeObject<MessageContainer>(updateEvent.object_.ToString()).message;
-        }
+            public EventUnknown(VkApiLongpoll.JsonLongpollUpdate updateEvent)
+            {
+                // Setting field.
+                update = updateEvent;
+            }
+        };
     }
-
-    public class EventUnknown : Event
-    {
-        // Update object.
-        public VkApiLongpoll.JsonLongpollUpdate update;
-
-        public EventUnknown(VkApiLongpoll.JsonLongpollUpdate updateEvent)
-        {
-            // Setting field.
-            update = updateEvent;
-        }
-    };
 }
