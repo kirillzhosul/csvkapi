@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Text.Json.Serialization;
 
 // Other.
 using Newtonsoft.Json;
@@ -15,78 +14,9 @@ using Newtonsoft.Json.Linq;
 
 namespace vkapi
 {
-    public class EventMessageNew
-    {
-        private class MessageContainer
-        {
-            [JsonProperty("message")]
-            public Message message { get; set; }
-        }
-        public class Message
-        {
-            #region JSON Fields.
+    #region Longpoll.
 
-            [JsonProperty("date")]
-            public long date { get; set; }
-
-            [JsonProperty("from_id")]
-            public long fromId { get; set; }
-
-            [JsonProperty("id")]
-            public long id { get; set; }
-
-            [JsonProperty("out")]
-            public bool isOut { get; set; }
-
-            [JsonProperty("peer_id")]
-            public long peerId { get; set; }
-
-            [JsonProperty("text")]
-            public string text { get; set; }
-
-            [JsonProperty("conversation_message_id")]
-            public long conversationMessageId { get; set; }
-
-            [JsonProperty("important")]
-            public bool important { get; set; }
-
-            [JsonProperty("random_id")]
-            public long randomId { get; set; }
-
-            [JsonProperty("is_hidden")]
-            public bool isHidden { get; set; }
-
-            // fwd_messages
-            // attachments
-
-            #endregion
-        }
-
-        // Fields.
-
-        // Message object.
-        public Message message = null;
-
-        public EventMessageNew(VkApiBotLongpoll.JsonLongpollUpdate updateEvent)
-        {
-            // Converting.
-            message = JsonConvert.DeserializeObject<MessageContainer>(updateEvent.object_.ToString()).message;
-        }
-    }
-
-    public class EventUnknown 
-    {
-        // Update object.
-        public VkApiBotLongpoll.JsonLongpollUpdate update;
-
-        public EventUnknown(VkApiBotLongpoll.JsonLongpollUpdate updateEvent) 
-        {
-            // Setting field.
-            update = updateEvent;
-        } 
-    };
-
-    public class VkApiBotLongpoll : VkApi
+    public abstract class VkApiLongpoll : VkApi
     {
         #region JSON.
 
@@ -100,7 +30,6 @@ namespace vkapi
         }
 
         protected class JsonLongpollServerResponse
-
         {
             // Fields.
 
@@ -145,7 +74,7 @@ namespace vkapi
 
             // Update object itself.
             //Dictionary<string, dynamic> object_;
-            public JObject object_; 
+            public JObject object_;
         }
 
         #endregion
@@ -153,20 +82,17 @@ namespace vkapi
         #region Delegates.
 
         // Declaring callback.
-        public delegate void CallbackDelegate(EventMessageNew longpollEvent);
+        public delegate void CallbackDelegate(Event longpollEvent);
 
         #endregion
 
         #region Fields.
 
-        // Group index.
-        private int _groupIndex;
-
         // Longpoll server information.
-        private Dictionary<string, string> _longpollServer = null;
+        protected Dictionary<string, string> _longpollServer = null;
 
         // List of subscribed update types.
-        private List<string> _subscribedUpdateTypes = null;
+        protected List<string> _subscribedUpdateTypes = null;
 
         #endregion
 
@@ -174,14 +100,7 @@ namespace vkapi
 
         #region Constructor.
 
-        public VkApiBotLongpoll(string accessToken, int groupIndex) : base(accessToken)
-            {
-                // Group index.
-                _groupIndex = groupIndex;
-
-                // Ovveride virtual method.
-                GenerateDefaultParameters();
-            }
+        public VkApiLongpoll(string accessToken) : base(accessToken) { }
 
         #endregion
 
@@ -198,7 +117,7 @@ namespace vkapi
             _subscribedUpdateTypes.Add(eventType);
         }
 
-        private bool EventTypeIsSubscribed(string type)
+        protected bool EventTypeIsSubscribed(string type)
         {
             // Returning true if null (not set).
             if (_subscribedUpdateTypes == null) return true;
@@ -209,44 +128,10 @@ namespace vkapi
 
         #endregion
 
-        #region Parsers.
+        #region Abstract.
 
-        private dynamic ParseEvent(JsonLongpollUpdate updateEvent)
-        {
-            // Parsing.
-
-            switch (updateEvent.type)
-            {
-                case "message_new":
-                    // New message event.
-                    return new EventMessageNew(updateEvent);
-                default:
-                    // Unknown event.
-                    return new EventUnknown(updateEvent);
-            }
-        }
-
-        private List<JsonLongpollUpdate> ParseUpdates(JsonLongpollUpdates updates)
-        {
-            // New list.
-            List<JsonLongpollUpdate> updatesParsed = new List<JsonLongpollUpdate>();
-
-            foreach (Dictionary<string, dynamic> update in updates.updates)
-            {
-                // New update.
-                JsonLongpollUpdate updateParsed = new JsonLongpollUpdate();
-
-                // Fields.
-                updateParsed.type = Convert.ToString(update["type"]);
-                updateParsed.object_ = update["object"];
-
-                // Adding.
-                updatesParsed.Add(updateParsed);
-            }
-
-            // Returning.
-            return updatesParsed;
-        }
+        protected abstract JsonLongpollUpdates CheckUpdates();
+        protected abstract void GetServer();
 
         #endregion
 
@@ -271,7 +156,7 @@ namespace vkapi
                     if (!EventTypeIsSubscribed(update.type)) continue;
 
                     // Parsing ?.
-                    dynamic updateEvent = ParseEvent(update);
+                    Event updateEvent = ParseEvent(update);
 
                     // Calling callback.
                     callback(updateEvent);
@@ -282,7 +167,143 @@ namespace vkapi
             }
         }
 
-        private JsonLongpollUpdates CheckUpdates()
+        #endregion
+
+        #region Parsers.
+
+        protected Event ParseEvent(JsonLongpollUpdate updateEvent)
+        {
+            // Parsing.
+
+            switch (updateEvent.type)
+            {
+                case "message_new":
+                    // New message event.
+                    return new EventMessageNew(updateEvent);
+                default:
+                    // Unknown event.
+                    return new EventUnknown(updateEvent);
+            }
+        }
+
+        protected List<JsonLongpollUpdate> ParseUpdates(JsonLongpollUpdates updates)
+        {
+            // New list.
+            List<JsonLongpollUpdate> updatesParsed = new List<JsonLongpollUpdate>();
+
+            foreach (Dictionary<string, dynamic> update in updates.updates)
+            {
+                // New update.
+                JsonLongpollUpdate updateParsed = new JsonLongpollUpdate();
+
+                // Fields.
+                updateParsed.type = Convert.ToString(update["type"]);
+                updateParsed.object_ = update["object"];
+
+                // Adding.
+                updatesParsed.Add(updateParsed);
+            }
+
+            // Returning.
+            return updatesParsed;
+        }
+
+        #endregion
+
+        #endregion
+    }
+
+    public class VkApiUserLongpoll : VkApiLongpoll
+    {
+        #region Methods.
+
+        #region Constructor.
+
+        public VkApiUserLongpoll(string accessToken) : base(accessToken)
+        {
+            // Ovveride virtual method.
+            GenerateDefaultParameters();
+        }
+
+        #endregion
+
+        #region Longpoll.
+
+        protected override JsonLongpollUpdates CheckUpdates()
+        {
+            // If server is not set - getting server.
+            if (_longpollServer == null) GetServer();
+
+            // Getting response.
+            string _response = UrlGet($"{_longpollServer["url"]}?act=a_check&key={_longpollServer["key"]}&ts={_longpollServer["ts"]}&wait=25&mode=8&version=3");
+
+            Console.WriteLine(_response);
+
+            // Getting updates object.
+            JsonLongpollUpdates updates = JsonConvert.DeserializeObject<JsonLongpollUpdates>(_response);
+
+            // Setting raw field.
+            updates.raw = _response;
+
+            // Parsing.
+            updates.parsed = ParseUpdates(updates);
+
+            // Returning updates.
+            return updates;
+        }
+
+        protected override void GetServer()
+        {
+            // Getting method response.
+            string response = Method("messages.getLongPollServer");
+
+            // Getting JSON longpoll object.
+            JsonLongpollServer longpollServer = JsonConvert.DeserializeObject<JsonLongpollServer>(response);
+
+            // Setting server.
+            _longpollServer = new Dictionary<string, string>()
+            {
+                { "ts", longpollServer.response.ts },
+                { "url", "http://" + longpollServer.response.server },
+                { "key", longpollServer.response.key },
+            };
+        }
+
+        #endregion
+
+        #endregion
+    }
+
+    public class VkApiBotLongpoll : VkApiLongpoll
+    {
+        #region Fields.
+
+        // Group index.
+        private int _groupIndex;
+
+        #endregion
+
+        #region Methods.
+
+        #region Constructor.
+
+        public VkApiBotLongpoll(string accessToken, int? groupIndex) : base(accessToken)
+        {
+            // Group index.
+            if (groupIndex.HasValue)
+            {
+                _groupIndex = groupIndex.Value;
+            }
+
+            // Ovveride virtual method.
+            GenerateDefaultParameters();
+        }
+
+        #endregion
+
+        #region Longpoll.
+
+        protected override JsonLongpollUpdates CheckUpdates()
         {
             // If server is not set - getting server.
             if (_longpollServer == null) GetServer();
@@ -303,7 +324,7 @@ namespace vkapi
             return updates;
         }
 
-        private void GetServer()
+        protected override void GetServer()
         {
             // Getting method response.
             string response = Method("groups.getLongPollServer");
@@ -334,6 +355,10 @@ namespace vkapi
 
         #endregion
     }
+
+    #endregion
+
+    #region VkApi, Methods.
 
     public class VkApi
     {
@@ -426,7 +451,7 @@ namespace vkapi
         #endregion
     }
 
-    class VkApiMethods
+    public class VkApiMethods
     {
         public static void MessagesSend(VkApi api, string message, long peer_id)
         {
@@ -441,4 +466,6 @@ namespace vkapi
             api.Method("messages.send", arguments);
         }
     }
+
+    #endregion
 }
