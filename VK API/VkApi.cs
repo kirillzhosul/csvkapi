@@ -1,9 +1,14 @@
-﻿using System;
+﻿#region Usings.
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+
+#endregion
 
 namespace vkapi
 {
@@ -100,7 +105,7 @@ namespace vkapi
                         string message = update.object_.GetValue("message").ToString();
 
                         // Getting message text
-                        string text = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(message)["text"]
+                        string text = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(message)["text"];
 
                         Console.WriteLine(text);
                     }
@@ -249,8 +254,15 @@ namespace vkapi
             // Debug message.
             if (Debugger.IsAttached) Console.WriteLine($"[Debug] Called UrlGet() with url - {url}");
 
+            // Getting request / response.
+            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
+            HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+
             // Downloading and returning.
-            return new WebClient().DownloadString(url);
+            using (StreamReader streamReader = new StreamReader(httpWebResponse.GetResponseStream()))
+            {
+                return streamReader.ReadToEnd();
+            }
         }
     }
 }
