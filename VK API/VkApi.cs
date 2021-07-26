@@ -1,10 +1,13 @@
 ﻿#region Usings.
 
+// System.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+
+// Other.
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -49,7 +52,7 @@ namespace vkapi
             public List<JsonLongpollUpdate> parsed;
         }
 
-        class JsonLongpollUpdate
+        public class JsonLongpollUpdate
         {
             // Fields.
 
@@ -57,6 +60,11 @@ namespace vkapi
 
             public JObject object_;//Dictionary<string, dynamic> object_;
         }
+
+        // Delegates.
+
+        // Declaring callback.
+        public delegate void CallbackDelegate(JsonLongpollUpdate longpollEvent);
 
         // Fields.
 
@@ -79,7 +87,7 @@ namespace vkapi
 
         // Longpoll.
 
-        public void ListenLongpoll()
+        public void ListenLongpoll(CallbackDelegate callback)
         {
             // If server is not set - getting server.
             if (_longpollServer == null) GetServer();
@@ -99,20 +107,8 @@ namespace vkapi
                     // Debug message.
                     if (Debugger.IsAttached) Console.WriteLine($"[Debug] Got new event with type - {update.type}");
 
-                    if (update.type == "message_new")
-                    {
-                        // Getting update message.
-                        string message = update.object_.GetValue("message").ToString();
-
-                        // Getting message text
-                        string text = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(message)["text"];
-
-                        Console.WriteLine(text);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Got unknown event with type {update.type}! = (");
-                    }
+                    // Calling callback.
+                    callback(update);
                 }
 
                 // Updating TS.
