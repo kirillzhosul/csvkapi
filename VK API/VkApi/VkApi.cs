@@ -78,11 +78,7 @@ namespace vkapi
         /// </summary>
         /// <param name="name">Method name from VK docs</param>
         /// <returns>Response</returns>
-        public string APIMethod(string name)
-        {
-            // Returning response.
-            return APIMethod(name, "");
-        }
+        public string APIMethod(string name) => APIMethod(name, "");
 
         /// <summary>
         /// APIMethod() overload, Calls API method with string array arguments.

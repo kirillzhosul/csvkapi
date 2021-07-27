@@ -26,11 +26,6 @@ namespace vkapi
         {
             /// Bot that echo your message with same text.
 
-            // Fields.
-
-            // API for using in callback methods.
-            private readonly VkApiBotLongpoll _Api;
-
             /// <summary>
             /// Constructor.
             /// </summary>
@@ -39,42 +34,37 @@ namespace vkapi
             public EchoBot(string accessToken, int groupIndex)
             {
                 // Creating API object.
-                _Api = new VkApiBotLongpoll(accessToken, groupIndex);
+                VkApiBotLongpoll api = new VkApiBotLongpoll(accessToken, groupIndex);
 
                 // Subscribing on new messages (As there we may get any other events that we dont expect to use).
-                _Api.EventSubscribeType(EventMessageNew.SubscriptionEventName);
+                api.EventSubscribeType(EventMessageNew.SubscriptionEventName);
+
+                // Adding callback event.
+                api.OnNewEvent += CallbackMessageNew;
 
                 // Starting listening with our callback for message.
-                _Api.ListenLongpoll(CallbackMessageEvent);
+                api.ListenLongpoll();
             }
 
-            /// <summary>
-            /// Callback for message event (As we subscibed only for new messages.
             /// </summary>
-            /// <param name="updateEvent">Event given from library</param>
-            private void CallbackMessageEvent(IEvent updateEvent)
+            /// Callback for messa new events.
+            /// </summary>
+            /// <param name="sender"> Sender (VkApi)</param>
+            /// <param name="e"> Event arguments (LongpollEventArgs)</param>
+            private void CallbackMessageNew(object sender, LongpollEventArgs e)
             {
                 // Upcasting update event with type IEvent to EventMessageNew.
                 // (As we want get message object).
-                EventMessageNew updateMessage = (EventMessageNew)updateEvent;
-
-                // Getting values.
-                string text = updateMessage.message.Text;
-                long from = updateMessage.message.FromId;
+                EventMessageNew.Message message = ((EventMessageNew)e.Update).message;
 
                 // Sending message to user.
-                Methods.MessagesSend(_Api, text, from);
+                Methods.MessagesSend((VkApi)sender, message.Text, message.FromId);
             }
         }
 
         public class BanBot
         {
             /// Bot that bans user on message ban from you.
-
-            // Fields.
-
-            // API for using in callback methods.
-            private readonly VkApiBotLongpoll _Api;
 
             /// <summary>
             /// Constructor.
@@ -84,51 +74,43 @@ namespace vkapi
             public BanBot(string accessToken, int groupIndex)
             {
                 // Creating API object.
-                _Api = new VkApiBotLongpoll(accessToken, groupIndex);
+                VkApiBotLongpoll api = new VkApiBotLongpoll(accessToken, groupIndex);
 
                 // Subscribing on our messages (As there we may get any other events that we dont expect to use).
-                _Api.EventSubscribeType(EventMessageReply.SubscriptionEventName);
+                api.EventSubscribeType(EventMessageReply.SubscriptionEventName);
 
-                // Starting listening with our callback for message.
-                _Api.ListenLongpoll(CallbackMessageEvent);
+                // Adding callback event.
+                api.OnNewEvent += CallbackMessageReply;
+
+                // Starting listening.
+                api.ListenLongpoll();
             }
 
-            /// <summary>
-            /// Callback for message event (As we subscibed only for new messages.
             /// </summary>
-            /// <param name="updateEvent">Event given from library</param>
-            private void CallbackMessageEvent(IEvent updateEvent)
+            /// Callback for message reply event.
+            /// </summary>
+            /// <param name="sender"> Sender (VkApi)</param>
+            /// <param name="e"> Event arguments (LongpollEventArgs)</param>
+            private void CallbackMessageReply(object sender, LongpollEventArgs e)
             {
-                if (updateEvent.GetType() == typeof(EventMessageReply)) // Or updateMessage.update.type == "message_reply" or updateMessage.update.type == EventMessageReply.SubscriptionEventName
-                {
-                    // Upcasting update event with type IEvent to EventMessageReply.
-                    // (As we want get message object).
-                    EventMessageReply updateMessage = (EventMessageReply)updateEvent;
+                // Upcasting update event with type IEvent to EventMessageReply.
+                // (As we want get message object).
+                EventMessageReply.Message message = ((EventMessageReply)e.Update).message;
 
-                    // Getting values.
-                    string text = updateMessage.message.Text;
-                    long from = updateMessage.message.FromId;
+                // Checking text.
+                if (message.Text != "ban") return;
 
-                    // Checking text.
-                    if (text != "ban") return;
+                // Sending message to user.
+                Methods.MessagesSend((VkApi)sender, "[BanBot] Banned!", message.FromId);
 
-                    // Sending message to user.
-                    Methods.MessagesSend(_Api, "[BanBot] Banned!", from);
-
-                    // Banning.
-                    Methods.GroupsBan(_Api, _Api.groupIndex, from, null, 0, "Banned by BanBot", true);
-                }
+                // Banning.
+                Methods.GroupsBan((VkApi)sender, ((VkApiBotLongpoll)sender).groupIndex, message.FromId, null, 0, "Banned by BanBot", true);
             }
         }
 
         public class DebugAPIBot
         {
             /// Bot that logs all callbacks to console.
-
-            // Fields.
-
-            // API for using in callback methods.
-            private readonly VkApiBotLongpoll _Api;
 
             /// <summary>
             /// Constructor.
@@ -138,42 +120,26 @@ namespace vkapi
             public DebugAPIBot(string accessToken, int groupIndex)
             {
                 // Creating API object.
-                _Api = new VkApiBotLongpoll(accessToken, groupIndex);
+                VkApiBotLongpoll api = new VkApiBotLongpoll(accessToken, groupIndex);
                 Console.WriteLine("[Debug] Connected to API");
 
-                // Starting listening with our callback for message.
+                // Adding callback event.
+                api.OnNewEvent += CallbackEvent;
+
+                // Starting listening longpoll.
                 Console.WriteLine("[Debug] Starting longpoll...");
-                _Api.ListenLongpoll(CallbackMessageEvent);
+                api.ListenLongpoll();
             }
 
-            /// <summary>
-            /// Callback for message event (As we subscibed only for new messages.
             /// </summary>
-            /// <param name="updateEvent">Event given from library</param>
-            private void CallbackMessageEvent(IEvent updateEvent)
+            /// Callback for new events.
+            /// </summary>
+            /// <param name="sender"> Sender (VkApi)</param>
+            /// <param name="e"> Event arguments (LongpollEventArgs)</param>
+            private void CallbackEvent(object sender, LongpollEventArgs e)
             {
                 // Logging.
-                Console.WriteLine("[Debug] Got new event IEvent!");
-
-                if (updateEvent.GetType() == typeof(EventMessageReply)) // Or updateMessage.update.type == "message_reply" or updateMessage.update.type == EventMessageReply.SubscriptionEventName
-                {
-                    // Upcasting update event with type IEvent to EventMessageReply.
-                    // (As we want get message object).
-                    EventMessageReply updateMessage = (EventMessageReply)updateEvent;
-
-                    // Debug.
-                    Console.WriteLine($"[Debug] New event message reply! Object - {updateMessage.update.object_}");
-                }
-
-                if (updateEvent.GetType() == typeof(EventMessageNew)) // Or updateMessage.update.type == "message_new" or updateMessage.update.type == EventMessageNew.SubscriptionEventName
-                {
-                    // Upcasting update event with type IEvent to EventMessageNew.
-                    // (As we want get message object).
-                    EventMessageNew updateMessage = (EventMessageNew)updateEvent;
-
-                    // Debug.
-                    Console.WriteLine($"[Debug] New event message new! Object - {updateMessage.update.object_}");
-                }
+                Console.WriteLine($"[Debug] Got new event IEvent! Type - {((EventIBase)e.Update).update.type}. Object - {((EventIBase)e.Update).update.object_}");
             }
         }
         

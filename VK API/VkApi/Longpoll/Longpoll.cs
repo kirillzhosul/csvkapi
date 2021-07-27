@@ -21,7 +21,18 @@ namespace vkapi
 
         /// Callback delegate.
         /// Will be called when got new event from longpoll.
-        public delegate void CallbackDelegate(IEvent longpollEvent);
+        /// OBSOLETE!
+        /// 
+        /// public delegate void CallbackDelegate(IEvent longpollEvent);
+        ///
+
+        public class LongpollEventArgs : EventArgs
+        {
+            /// Longpoll event args for event handler.
+
+            /// Update event itself.
+            public IEvent Update { get; set; }
+        }
 
         /// Thrown when calling StopListeningLongpoll() when longpoll is not currently listening.
         public class IsNotListeningException : Exception{}
@@ -37,6 +48,10 @@ namespace vkapi
             // Longpoll server information.
             // Should be changed in GetServer();
             protected Dictionary<string, string> _longpollServer = null;
+
+            // Event that will be called,
+            // When got new update longpoll event.
+            public event EventHandler<LongpollEventArgs> OnNewEvent;
 
             // List of subscribed update types.
             // Changed in EventSubscribeType (Also implemented in EventTypeIsSubscribed)
@@ -117,10 +132,9 @@ namespace vkapi
             }
 
             /// <summary>
-            /// Listens longpoll and passing new events to callback method that is passed as an argument.
+            /// Listens longpoll and passing new events to event OnNewEvent.
             /// </summary>
-            /// <param name="callback">Callback delegate which be called every event that is subscribed via EventSubscribedType()</param>
-            public void ListenLongpoll(CallbackDelegate callback)
+            public void ListenLongpoll()
             {
                 // If server is not set - getting server.
                 if (_longpollServer == null) GetServer();
@@ -140,8 +154,10 @@ namespace vkapi
                         // If not subscribed on event - continue.
                         if (!EventTypeIsSubscribed(update.type)) continue;
 
-                        // Calling callback.
-                        callback(ParseEvent(update));
+                        // Calling callback events.
+                        OnNewEvent?.Invoke(this, new LongpollEventArgs(){
+                            Update = ParseEvent(update)
+                        });
                     }
 
                     // Updating TS.
@@ -220,10 +236,10 @@ namespace vkapi
             /// </summary>
             /// <param name="accessToken">VK API access token</param>
             /// <param name="groupIndex">Group index</param>
-            public VkApiBotLongpoll(string accessToken, int groupIndex_) : base(accessToken)
+            public VkApiBotLongpoll(string accessToken, int groupIndex) : base(accessToken)
             {
                 // Set group index.
-                groupIndex = groupIndex_;
+                this.groupIndex = groupIndex;
 
                 // Ovveride virtual method.
                 APIGenerateDefaultParameters();
