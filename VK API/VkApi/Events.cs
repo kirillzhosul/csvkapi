@@ -1,95 +1,128 @@
 ﻿#region Usings.
 
-// Other.
+// JSON Parsing.
 using Newtonsoft.Json;
 
 #endregion
 
 namespace vkapi
 {
-    namespace events
+    namespace longpoll
     {
-        public interface IEvent 
+        /// Longpoll namespace. Includes working with User / Bots longpoll api.
+        /// Use this is if you want process message and other events.
+
+        namespace events
         {
-            string subscriptionEventName { get; set; }
-        };
+            /// Events namespace. Includes event interface / classes.
+            /// Use this is if you using longpoll.
 
-        public class EventMessageNew : IEvent
-        {
-            // Subscription Name,
-            public string subscriptionEventName { get; set; } = "message_new";
-
-            private class MessageContainer
+            public interface IEvent
             {
-                [JsonProperty("message")]
-                public Message Message { get; set; }
-            }
+                /// Longpoll event interface, used for upcasting.
+            };
 
-            public class Message
+            public class EventMessageNew : IEvent
             {
-                #region JSON Fields.
+                /// New Message event.
 
-                [JsonProperty("date")]
-                public long Date { get; set; }
+                // Subscription name.
+                public static string SubscriptionEventName = "message_new";
 
-                [JsonProperty("from_id")]
-                public long FromId { get; set; }
+                #region JSON Containers.
 
-                [JsonProperty("id")]
-                public long Id { get; set; }
+                private class MessageContainer
+                {
+                    /// JSON Parsing containter for field MESSAGE.
 
-                [JsonProperty("out")]
-                public bool IsOut { get; set; }
+                    // Message property.
+                    [JsonProperty("message")]
+                    public Message Message { get; set; }
+                }
 
-                [JsonProperty("peer_id")]
-                public long PeerId { get; set; }
+                public class Message
+                {
+                    #region JSON Fields.
 
-                [JsonProperty("text")]
-                public string Text { get; set; }
+                    [JsonProperty("date")]
+                    public long Date { get; set; }
 
-                [JsonProperty("conversation_message_id")]
-                public long ConversationMessageId { get; set; }
+                    [JsonProperty("from_id")]
+                    public long FromId { get; set; }
 
-                [JsonProperty("important")]
-                public bool Important { get; set; }
+                    [JsonProperty("id")]
+                    public long Id { get; set; }
 
-                [JsonProperty("random_id")]
-                public long RandomId { get; set; }
+                    [JsonProperty("out")]
+                    public bool IsOut { get; set; }
 
-                [JsonProperty("is_hidden")]
-                public bool IsHidden { get; set; }
+                    [JsonProperty("peer_id")]
+                    public long PeerId { get; set; }
 
-                // fwd_messages
-                // attachments
+                    [JsonProperty("text")]
+                    public string Text { get; set; }
+
+                    [JsonProperty("conversation_message_id")]
+                    public long ConversationMessageId { get; set; }
+
+                    [JsonProperty("important")]
+                    public bool Important { get; set; }
+
+                    [JsonProperty("random_id")]
+                    public long RandomId { get; set; }
+
+                    [JsonProperty("is_hidden")]
+                    public bool IsHidden { get; set; }
+
+                    // fwd_messages
+                    // attachments
+
+                    #endregion
+                }
 
                 #endregion
+
+                // Fields.
+
+                // Message object.
+                public Message message = null;
+
+                /// <summary>
+                /// Constructor, handles parsing of message.
+                /// </summary>
+                /// <param name="updateEvent">Update event, will be passed from library</param>
+                public EventMessageNew(json.JsonLongpollUpdate updateEvent)
+                {
+                    // Parsing JSON.
+
+                    // Getting event object string -> Parsing as message container -> Get mesasge property.
+                    message = JsonConvert.DeserializeObject<MessageContainer>(updateEvent.object_.ToString()).Message;
+                }
             }
 
-            // Fields.
-
-            // Message object.
-            public Message message = null;
-
-            public EventMessageNew(VkApiLongpoll.JsonLongpollUpdate updateEvent)
+            public class EventUnknown : IEvent
             {
-                // Converting.
-                message = JsonConvert.DeserializeObject<MessageContainer>(updateEvent.object_.ToString()).Message;
-            }
+                /// Uknown event.
+                /// Used as result when event is unknown.
+                /// You should dont use this, please create new class even if you dont fill it for now.
+
+                // Subscription Name,
+                public static string SubscriptionEventName= "message_new";
+
+                // Update object.
+                public json.JsonLongpollUpdate update;
+
+                /// <summary>
+                /// Constructor.
+                /// </summary>
+                /// <param name="updateEvent">Update event, will be passed from library</param>
+                public EventUnknown(json.JsonLongpollUpdate updateEvent)
+                {
+                    // Passing update directly to field, as this is unknown event,
+                    // and you should process update as you want by self.
+                    update = updateEvent;
+                }
+            };
         }
-
-        public class EventUnknown : IEvent
-        {
-            // Subscription Name,
-            public string subscriptionEventName { get; set; } = "ievent_unkown";
-
-            // Update object.
-            public VkApiLongpoll.JsonLongpollUpdate update;
-
-            public EventUnknown(VkApiLongpoll.JsonLongpollUpdate updateEvent)
-            {
-                // Setting field.
-                update = updateEvent;
-            }
-        };
     }
 }

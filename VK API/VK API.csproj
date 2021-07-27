@@ -38,8 +38,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="VkApi\Events.cs" />
-    <Compile Include="VkApi\Examples\examples.cs" />
-    <Compile Include="VkApi\Main.cs" />
+    <Compile Include="VkApi\Examples\Examples.cs" />
+    <Compile Include="Main.cs" />
+    <Compile Include="VkApi\Longpoll\Json.cs" />
+    <Compile Include="VkApi\Longpoll\Longpoll.cs" />
+    <Compile Include="VkApi\Methods.cs" />
     <Compile Include="VkApi\VkApi.cs" />
   </ItemGroup>
   <ItemGroup>

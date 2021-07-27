@@ -1,396 +1,40 @@
 ﻿#region Usings.
 
 // System.
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
-
-// Other.
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
-// Local.
-using vkapi.events;
 
 #endregion
 
 namespace vkapi
 {
-    #region Longpoll.
-
-    public abstract class VkApiLongpoll : VkApi
-    {
-        #region JSON.
-
-        protected class JsonLongpollServer
-        {
-            // Fields.
-
-            // Server response.
-            [JsonProperty("response")]
-            public JsonLongpollServerResponse Response { get; set; }
-        }
-
-        protected class JsonLongpollServerResponse
-        {
-            // Fields.
-
-            // Key for request.
-            [JsonProperty("key")]
-            public string Key { get; set; }
-
-            // TS for getting only latest update.
-            [JsonProperty("ts")]
-            public string Ts { get; set; }
-
-            // Server URL.
-            [JsonProperty("server")]
-            public string Server { get; set; }
-        }
-
-        protected class JsonLongpollUpdates
-        {
-            // Fields.
-
-            // TS for updating our ts.
-            [JsonProperty("ts")]
-            public string Ts { get; set; }
-
-            // Updates list.
-            [JsonProperty("updates")]
-            public List<Dictionary<string, dynamic>> Updates { get; set; }
-
-            // Raw response.
-            public string raw;
-
-            // Parsed updates.
-            public List<JsonLongpollUpdate> parsed;
-        }
-
-        public class JsonLongpollUpdate
-        {
-            // Fields.
-
-            // Type of update.
-            public string type;
-
-            // Update object itself.
-            //Dictionary<string, dynamic> object_;
-            public JObject object_;
-        }
-
-        #endregion
-
-        #region Delegates.
-
-        // Declaring callback.
-        public delegate void CallbackDelegate(IEvent longpollEvent);
-
-        #endregion
-
-        #region Fields.
-
-        // Longpoll server information.
-        protected Dictionary<string, string> _longpollServer = null;
-
-        // List of subscribed update types.
-        protected List<string> _subscribedUpdateTypes = null;
-
-        #endregion
-
-        #region Methods.
-
-        #region Constructor.
-
-        public VkApiLongpoll(string accessToken) : base(accessToken) { }
-
-        #endregion
-
-        #region Longpoll.
-
-        #region Events Subscriptions.
-
-        public void EventSubscribeType(string eventType)
-        {
-            // If subscribed types is not set - set it.
-            if (_subscribedUpdateTypes == null) _subscribedUpdateTypes = new List<string>();
-
-            // Adding event type.
-            _subscribedUpdateTypes.Add(eventType);
-        }
-
-        public void EventSubscribeType(Type eventType)
-        {
-            // If subscribed types is not set - set it.
-            if (_subscribedUpdateTypes == null) _subscribedUpdateTypes = new List<string>();
-
-            // Adding event type.
-            _subscribedUpdateTypes.Add(((IEvent)eventType).subscriptionEventName);
-        }
-
-        protected bool EventTypeIsSubscribed(string type)
-        {
-            // Returning true if null (not set).
-            if (_subscribedUpdateTypes == null) return true;
-
-            // Returning if subscribeed.
-            return _subscribedUpdateTypes.Contains(type);
-        }
-
-        #endregion
-
-        #region Abstract.
-
-        protected abstract JsonLongpollUpdates CheckUpdates();
-        protected abstract void GetServer();
-
-        #endregion
-
-        public void ListenLongpoll(CallbackDelegate callback)
-        {
-            // If server is not set - getting server.
-            if (_longpollServer == null) GetServer();
-
-            while (true)
-            {
-                // While we running longpoll listener.
-
-                // Getting updates.
-                JsonLongpollUpdates updates = CheckUpdates();
-
-                // If no updates - pass.
-                if (updates.parsed.Count == 0) continue;
-
-                foreach (JsonLongpollUpdate update in updates.parsed)
-                {
-                    // If not subscribed on event - continue.
-                    if (!EventTypeIsSubscribed(update.type)) continue;
-
-                    // Parsing ?.
-                    IEvent updateEvent = ParseEvent(update);
-
-                    // Calling callback.
-                    callback(updateEvent);
-                }
-
-                // Updating TS.
-                _longpollServer["ts"] = updates.Ts;
-            }
-        }
-
-        #endregion
-
-        #region Parsers.
-
-        protected IEvent ParseEvent(JsonLongpollUpdate updateEvent)
-        {
-            // Parsing.
-
-            switch (updateEvent.type)
-            {
-                case "message_new":
-                    // New message event.
-                    return new EventMessageNew(updateEvent);
-                default:
-                    // Unknown event.
-                    return new EventUnknown(updateEvent);
-            }
-        }
-
-        protected List<JsonLongpollUpdate> ParseUpdates(JsonLongpollUpdates updates)
-        {
-            // New list.
-            List<JsonLongpollUpdate> updatesParsed = new List<JsonLongpollUpdate>();
-
-            foreach (Dictionary<string, dynamic> update in updates.Updates)
-            {
-                // New update.
-                JsonLongpollUpdate updateParsed = new JsonLongpollUpdate
-                {
-                    // Fields.
-                    type = Convert.ToString(update["type"]),
-                    object_ = update["object"]
-                };
-
-                // Adding.
-                updatesParsed.Add(updateParsed);
-            }
-
-            // Returning.
-            return updatesParsed;
-        }
-
-        #endregion
-
-        #endregion
-    }
-
-    public class VkApiUserLongpoll : VkApiLongpoll
-    {
-        #region Methods.
-
-        #region Constructor.
-
-        public VkApiUserLongpoll(string accessToken) : base(accessToken)
-        {
-            // Ovveride virtual method.
-            GenerateDefaultParameters();
-        }
-
-        #endregion
-
-        #region Longpoll.
-
-        protected override JsonLongpollUpdates CheckUpdates()
-        {
-            // If server is not set - getting server.
-            if (_longpollServer == null) GetServer();
-
-            // Getting response.
-            string _response = UrlGet($"{_longpollServer["url"]}?act=a_check&key={_longpollServer["key"]}&ts={_longpollServer["ts"]}&wait=25&mode=8&version=3");
-
-            Console.WriteLine(_response);
-
-            // Getting updates object.
-            JsonLongpollUpdates updates = JsonConvert.DeserializeObject<JsonLongpollUpdates>(_response);
-
-            // Setting raw field.
-            updates.raw = _response;
-
-            // Parsing.
-            updates.parsed = ParseUpdates(updates);
-
-            // Returning updates.
-            return updates;
-        }
-
-        protected override void GetServer()
-        {
-            // Getting method response.
-            string response = Method("messages.getLongPollServer");
-
-            // Getting JSON longpoll object.
-            JsonLongpollServer longpollServer = JsonConvert.DeserializeObject<JsonLongpollServer>(response);
-
-            // Setting server.
-            _longpollServer = new Dictionary<string, string>()
-            {
-                { "ts", longpollServer.Response.Ts },
-                { "url", "http://" + longpollServer.Response.Server },
-                { "key", longpollServer.Response.Key },
-            };
-        }
-
-        #endregion
-
-        #endregion
-    }
-
-    public class VkApiBotLongpoll : VkApiLongpoll
-    {
-        #region Fields.
-
-        // Group index.
-        private readonly int _groupIndex;
-
-        #endregion
-
-        #region Methods.
-
-        #region Constructor.
-
-        public VkApiBotLongpoll(string accessToken, int? groupIndex) : base(accessToken)
-        {
-            // Group index.
-            if (groupIndex.HasValue)
-            {
-                _groupIndex = groupIndex.Value;
-            }
-
-            // Ovveride virtual method.
-            GenerateDefaultParameters();
-        }
-
-        #endregion
-
-        #region Longpoll.
-
-        protected override JsonLongpollUpdates CheckUpdates()
-        {
-            // If server is not set - getting server.
-            if (_longpollServer == null) GetServer();
-
-            // Getting response.
-            string _response = UrlGet($"{_longpollServer["url"]}?act=a_check&key={_longpollServer["key"]}&ts={_longpollServer["ts"]}&wait=25");
-
-            // Getting updates object.
-            JsonLongpollUpdates updates = JsonConvert.DeserializeObject<JsonLongpollUpdates>(_response);
-
-            // Setting raw field.
-            updates.raw = _response;
-
-            // Parsing.
-            updates.parsed = ParseUpdates(updates);
-
-            // Returning updates.
-            return updates;
-        }
-
-        protected override void GetServer()
-        {
-            // Getting method response.
-            string response = Method("groups.getLongPollServer");
-
-            // Getting JSON longpoll object.
-            JsonLongpollServer longpollServer = JsonConvert.DeserializeObject<JsonLongpollServer>(response);
-
-            // Setting server.
-            _longpollServer = new Dictionary<string, string>()
-            {
-                { "ts", longpollServer.Response.Ts },
-                { "url", longpollServer.Response.Server },
-                { "key", longpollServer.Response.Key },
-            };
-        }
-
-        #endregion
-
-        #region Other.
-
-        protected override void GenerateDefaultParameters()
-        {
-            // Generating default parameters.
-            _urlDefaultParameters = $"v={_version}&access_token={_accessToken}&group_id={_groupIndex}";
-        }
-
-        #endregion
-
-        #endregion
-    }
-
-    #endregion
-
-    #region VkApi, Methods.
-
     public class VkApi
     {
-        #region Fields.
+        /// Default VK API class,
+        /// Implements base for VK, used as parent for Longpoll.
+        /// You may use this as default VK API wrapper.
+
+        #region Fields, Constants.
+
         // Version for API requests.
+        // THIS IS DEFAULT VALUE.
+        // You may change this via -> ChangeVersion(version) method!
         protected string _version = "5.131";
 
         // Access token.
-        protected string _accessToken;
+        // Should be not changed except only  in constructor.
+        protected readonly string _accessToken;
 
         // Default GET parameters for method url.
+        // Generated in method -> GenerateDefaultParameters(),
+        // Which is virtual, so this generationg is overriden in subclasses.
         protected string _urlDefaultParameters;
 
-        #endregion
+        // Constants.
 
-        #region Constants.
-
-        // Url to method.
-        protected const string _urlMethod = "https://api.vk.com/method";
+        // URL to API method link.
+        // IDK why you want to change this, but... don`t.
+        public const string _urlMethod = "https://api.vk.com/method";
 
         #endregion
 
@@ -398,45 +42,78 @@ namespace vkapi
 
         #region Constructor.
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="accessToken">Access token for VK API</param>
         public VkApi(string accessToken)
         {
-            // Access token.
+            // Setting access token.
             _accessToken = accessToken;
 
-            // Generating new default params.
-            GenerateDefaultParameters();
+            // Generating new default parameters.
+            APIGenerateDefaultParameters();
         }
 
         #endregion
 
         #region API.
 
-        public string Method(string name)
+        #region APIMethod, oveloads.
+
+        /// <summary>
+        /// Calls API method.
+        /// </summary>
+        /// <param name="name">Method name from VK docs</param>
+        /// <param name="arguments">Arguments as string separated by & (Example: message=test&peer_id=1125)</param>
+        /// <returns>Response</returns>
+        public string APIMethod(string name, string arguments)
         {
             // Returning response.
-            return UrlGet($"{_urlMethod}/{name}?{_urlDefaultParameters}");
+            return UrlGet($"{_urlMethod}/{name}?{_urlDefaultParameters}&{arguments}");
         }
 
-        public string Method(string name, string[] arguments)
+        /// <summary>
+        /// APIMethod() overload, Calls API method with no arguments.
+        /// </summary>
+        /// <param name="name">Method name from VK docs</param>
+        /// <returns>Response</returns>
+        public string APIMethod(string name)
         {
             // Returning response.
-            return UrlGet($"{_urlMethod}/{name}?{_urlDefaultParameters}&{string.Join("&", arguments)}");
+            return APIMethod(name, "");
+        }
+
+        /// <summary>
+        /// APIMethod() overload, Calls API method with string array arguments.
+        /// </summary>
+        /// <param name="name">Method name from VK docs</param>
+        /// <returns>Response</returns>
+        public string APIMethod(string name, string[] arguments)
+        {
+            // Returning response.
+            return APIMethod(name, string.Join("&", arguments));
         }
 
         #endregion
 
-        #region Other.
-
-        public void ChangeVersion(string version)
+        /// <summary>
+        /// Changes API version. Also call default parameters generation.
+        /// </summary>
+        /// <param name="version">Version to change</param>
+        public void APIChangeVersion(string version)
         {
             // Change version.
             _version = version;
 
             // Generating new default params.
-            GenerateDefaultParameters();
+            APIGenerateDefaultParameters();
         }
 
-        protected virtual void GenerateDefaultParameters()
+        /// <summary>
+        /// Generates default GET requests for API calls.
+        /// </summary>
+        protected virtual void APIGenerateDefaultParameters()
         {
             // Generating default parameters.
             _urlDefaultParameters = $"v={_version}&access_token={_accessToken}";
@@ -444,9 +121,14 @@ namespace vkapi
 
         #endregion
 
-        #region System.
+        #region Other.
 
-        protected string UrlGet(string url)
+        /// <summary>
+        /// Gets URL boy and returns it as string.
+        /// </summary>
+        /// <param name="url">URL for getting it</param>
+        /// <returns>Response</returns>
+        protected static string UrlGet(string url)
         {
             // Getting request / response.
             HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
@@ -455,6 +137,7 @@ namespace vkapi
             // Downloading and returning.
             using (StreamReader streamReader = new StreamReader(httpWebResponse.GetResponseStream()))
             {
+                // Returning.
                 return streamReader.ReadToEnd();
             }
         }
@@ -463,22 +146,4 @@ namespace vkapi
 
         #endregion
     }
-
-    public class VkApiMethods
-    {
-        public static void MessagesSend(VkApi api, string message, long peer_id)
-        {
-            // Getting arguments for method.
-            string[] arguments = {
-                $"random_id=0",
-                $"peer_id={peer_id}",
-                $"message={message}",
-            };
-
-            // Asnwering.
-            api.Method("messages.send", arguments);
-        }
-    }
-
-    #endregion
 }
