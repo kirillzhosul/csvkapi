@@ -19,8 +19,8 @@ namespace vkapi
         /// Longpoll namespace. Includes working with User / Bots longpoll API.
         /// Use this if you want process message and other events.
 
-        // Callback delegate.
-        // Will be called when got new event from longpoll.
+        /// Callback delegate.
+        /// Will be called when got new event from longpoll.
         public delegate void CallbackDelegate(IEvent longpollEvent);
 
         /// Thrown when calling StopListeningLongpoll() when longpoll is not currently listening.
@@ -161,8 +161,9 @@ namespace vkapi
                 // Parsing.
                 switch (updateEvent.type)
                 {
-                    case "message_new": return new EventMessageNew(updateEvent);
-                    default:            return new EventUnknown(updateEvent);
+                    case "message_new":   return new EventMessageNew(updateEvent);
+                    case "message_reply": return new EventMessageReply(updateEvent);
+                    default:              return new EventUnknown(updateEvent);
                 }
             }
 
@@ -208,7 +209,7 @@ namespace vkapi
 
             // Group index.
             // Set in constructor.
-            private readonly int _groupIndex;
+            public readonly int groupIndex;
 
             #endregion
 
@@ -219,10 +220,10 @@ namespace vkapi
             /// </summary>
             /// <param name="accessToken">VK API access token</param>
             /// <param name="groupIndex">Group index</param>
-            public VkApiBotLongpoll(string accessToken, int groupIndex) : base(accessToken)
+            public VkApiBotLongpoll(string accessToken, int groupIndex_) : base(accessToken)
             {
                 // Set group index.
-                _groupIndex = groupIndex;
+                groupIndex = groupIndex_;
 
                 // Ovveride virtual method.
                 APIGenerateDefaultParameters();
@@ -276,7 +277,7 @@ namespace vkapi
             protected override void APIGenerateDefaultParameters()
             {
                 // Generating default parameters.
-                _urlDefaultParameters = $"v={_version}&access_token={_accessToken}&group_id={_groupIndex}";
+                _urlDefaultParameters = $"v={_version}&access_token={_accessToken}&group_id={groupIndex}";
             }
 
             #endregion

@@ -17,17 +17,64 @@ namespace vkapi
             /// Events namespace. Includes event interface / classes.
             /// Use this is if you using longpoll.
 
+            #region Bases.
+
             public interface IEvent
             {
                 /// Longpoll event interface, used for upcasting.
             };
 
-            public class EventMessageNew : IEvent
+            public class EventIBase : IEvent
+            {
+                /// Event base.
+                /// Used as result when event is unknown.
+                /// You should dont use this, please create new class even if you dont fill it for now.
+
+                // Subscription Name,
+                public static string SubscriptionEventName = null;
+
+                // Update object.
+                public json.JsonLongpollUpdate update;
+
+                /// <summary>
+                /// Constructor.
+                /// </summary>
+                /// <param name="updateEvent">Update event, will be passed from library</param>
+                public EventIBase(json.JsonLongpollUpdate updateEvent)
+                {
+                    // Passing update directly to field, as this is unknown event,
+                    // and you should process update as you want by self.
+                    update = updateEvent;
+                }
+            };
+
+            #endregion
+
+            #region Unknown, Default event.
+
+            public class EventUnknown : EventIBase
+            {
+                /// Uknown event.
+                /// Used as result when event is unknown.
+                /// You should dont use this, please create new class even if you dont fill it for now.
+
+                /// <summary>
+                /// Constructor.
+                /// </summary>
+                /// <param name="updateEvent">Update event, will be passed from library</param>
+                public EventUnknown(json.JsonLongpollUpdate updateEvent) : base(updateEvent) { }
+            };
+
+            #endregion
+
+            #region Events.
+
+            public class EventMessageNew : EventIBase
             {
                 /// New Message event.
 
                 // Subscription name.
-                public static string SubscriptionEventName = "message_new";
+                public static new string SubscriptionEventName = "message_new";
 
                 #region JSON Containers.
 
@@ -91,7 +138,7 @@ namespace vkapi
                 /// Constructor, handles parsing of message.
                 /// </summary>
                 /// <param name="updateEvent">Update event, will be passed from library</param>
-                public EventMessageNew(json.JsonLongpollUpdate updateEvent)
+                public EventMessageNew(json.JsonLongpollUpdate updateEvent): base(updateEvent)
                 {
                     // Parsing JSON.
 
@@ -100,29 +147,46 @@ namespace vkapi
                 }
             }
 
-            public class EventUnknown : IEvent
+            public class EventMessageReply : EventIBase
             {
-                /// Uknown event.
-                /// Used as result when event is unknown.
-                /// You should dont use this, please create new class even if you dont fill it for now.
+                /// Message from event.
 
-                // Subscription Name,
-                public static string SubscriptionEventName= "message_new";
+                // Subscription name.
+                public static new string SubscriptionEventName = "message_reply";
 
-                // Update object.
-                public json.JsonLongpollUpdate update;
+                #region JSON Containers.
+
+                public class Message : EventMessageNew.Message
+                {
+                    #region JSON Fields.
+
+                    [JsonProperty("admin_author_id")]
+                    public bool AdminAuthorId { get; set; }
+
+                    #endregion
+                }
+
+                #endregion
+
+                // Fields.
+
+                // Message object.
+                public Message message = null;
 
                 /// <summary>
-                /// Constructor.
+                /// Constructor, handles parsing of message.
                 /// </summary>
                 /// <param name="updateEvent">Update event, will be passed from library</param>
-                public EventUnknown(json.JsonLongpollUpdate updateEvent)
+                public EventMessageReply(json.JsonLongpollUpdate updateEvent) : base(updateEvent)
                 {
-                    // Passing update directly to field, as this is unknown event,
-                    // and you should process update as you want by self.
-                    update = updateEvent;
+                    // Parsing JSON.
+
+                    // Getting event object string -> Parsing as message container -> Get mesasge property.
+                    message = JsonConvert.DeserializeObject<Message>(updateEvent.object_.ToString());
                 }
-            };
+            }
+
+            #endregion
         }
     }
 }
