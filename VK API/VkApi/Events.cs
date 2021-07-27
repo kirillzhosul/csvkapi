@@ -9,10 +9,16 @@ namespace vkapi
 {
     namespace events
     {
-        public interface IEvent { };
+        public interface IEvent 
+        {
+            string subscriptionEventName { get; set; }
+        };
 
         public class EventMessageNew : IEvent
         {
+            // Subscription Name,
+            public string subscriptionEventName { get; set; } = "message_new";
+
             private class MessageContainer
             {
                 [JsonProperty("message")]
@@ -73,6 +79,9 @@ namespace vkapi
 
         public class EventUnknown : IEvent
         {
+            // Subscription Name,
+            public string subscriptionEventName { get; set; } = "ievent_unkown";
+
             // Update object.
             public VkApiLongpoll.JsonLongpollUpdate update;
 

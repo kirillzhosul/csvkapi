@@ -12,7 +12,7 @@
                 VkApiBotLongpoll api = new VkApiBotLongpoll(accessToken, groupIndex);
 
                 // Subscribing on new messages.
-                api.EventSubscribeType("message_new");
+                api.EventSubscribeType(typeof(EventMessageNew));
 
                 // Starting listening with sending out.
                 api.ListenLongpoll((IEvent updateEvent) =>
@@ -31,7 +31,7 @@
                 VkApiUserLongpoll api = new VkApiUserLongpoll(accessToken);
 
                 // Subscribing on new messages.
-                api.EventSubscribeType("message_new");
+                api.EventSubscribeType(typeof(EventMessageNew));
 
                 // Starting listening with sending out.
                 api.ListenLongpoll((IEvent update) =>

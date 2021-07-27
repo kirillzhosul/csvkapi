@@ -120,6 +120,15 @@ namespace vkapi
             _subscribedUpdateTypes.Add(eventType);
         }
 
+        public void EventSubscribeType(Type eventType)
+        {
+            // If subscribed types is not set - set it.
+            if (_subscribedUpdateTypes == null) _subscribedUpdateTypes = new List<string>();
+
+            // Adding event type.
+            _subscribedUpdateTypes.Add(((IEvent)eventType).subscriptionEventName);
+        }
+
         protected bool EventTypeIsSubscribed(string type)
         {
             // Returning true if null (not set).
