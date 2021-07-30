@@ -43,6 +43,7 @@
     <Compile Include="VkApi\Longpoll\Json.cs" />
     <Compile Include="VkApi\Longpoll\Longpoll.cs" />
     <Compile Include="VkApi\Methods.cs" />
+    <Compile Include="VkApi\Utils.cs" />
     <Compile Include="VkApi\VkApi.cs" />
   </ItemGroup>
   <ItemGroup>

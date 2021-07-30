@@ -1,12 +1,4 @@
-﻿#region Usings.
-
-// System.
-using System.IO;
-using System.Net;
-
-#endregion
-
-namespace vkapi
+﻿namespace vkapi
 {
     public class VkApi
     {
@@ -69,8 +61,14 @@ namespace vkapi
         /// <returns>Response</returns>
         public string APIMethod(string name, string arguments)
         {
+            // Getting response.
+            string response = utils.Url.Get($"{_urlMethod}/{name}?{_urlDefaultParameters}&{arguments}");
+
+            // Checking errorrs.
+            methods.Methods.CheckResponseErrors(response);
+
             // Returning response.
-            return UrlGet($"{_urlMethod}/{name}?{_urlDefaultParameters}&{arguments}");
+            return response;
         }
 
         /// <summary>
@@ -113,29 +111,6 @@ namespace vkapi
         {
             // Generating default parameters.
             _urlDefaultParameters = $"v={_version}&access_token={_accessToken}";
-        }
-
-        #endregion
-
-        #region Other.
-
-        /// <summary>
-        /// Gets URL boy and returns it as string.
-        /// </summary>
-        /// <param name="url">URL for getting it</param>
-        /// <returns>Response</returns>
-        protected static string UrlGet(string url)
-        {
-            // Getting request / response.
-            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
-            HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-
-            // Downloading and returning.
-            using (StreamReader streamReader = new StreamReader(httpWebResponse.GetResponseStream()))
-            {
-                // Returning.
-                return streamReader.ReadToEnd();
-            }
         }
 
         #endregion

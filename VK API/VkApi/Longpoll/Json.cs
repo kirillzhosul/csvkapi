@@ -84,4 +84,47 @@ namespace vkapi
             }
         }
     }
+
+    namespace methods
+    {
+        /// Methods namespace. Includes static methods for VkApi class.
+        /// You should include this for more simple using of methods.
+        /// You may use default VkApi class APIMethod implementation with 3 overloads.
+        /// This class will give you opportunity to call methods like default methods/functions.
+
+        namespace json
+        {
+            /// JSON namespace. Includes classes for JSON parsing.
+            /// You should dont use this in your code.
+            /// Except maybe rare situation when you want to add new method?
+
+            public class JsonUploadServerPhotosResponse
+            {
+                /// Contains photos upload server response container.
+                /// Holds response object.
+
+                // Server response.
+                [JsonProperty("response")]
+                public JsonUploadServerPhotos Response { get; set; }
+            }
+
+            public class JsonUploadServerPhotos
+            {
+                /// Contains main photos upload server response.
+                /// Holds server parameters: URL, AID, UID.
+
+                // Key for request.
+                [JsonProperty("upload_url")]
+                public string UploadUrl { get; set; }
+
+                // Key for request.
+                [JsonProperty("album_id")]
+                public long AlbumId { get; set; }
+
+                // Key for request.
+                [JsonProperty("user_id")]
+                public long UserId { get; set; }
+            }
+        }
+    }
 }

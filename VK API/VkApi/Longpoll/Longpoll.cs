@@ -255,7 +255,7 @@ namespace vkapi
                 if (_longpollServer == null) GetServer();
 
                 // Getting response.
-                string _response = UrlGet($"{_longpollServer["server"]}?act=a_check&key={_longpollServer["key"]}&ts={_longpollServer["ts"]}&wait=25");
+                string _response = utils.Url.Get($"{_longpollServer["server"]}?act=a_check&key={_longpollServer["key"]}&ts={_longpollServer["ts"]}&wait=25");
 
                 // Getting updates object.
                 json.JsonLongpollUpdates updates = JsonConvert.DeserializeObject<json.JsonLongpollUpdates>(_response);
@@ -276,7 +276,7 @@ namespace vkapi
             protected override void GetServer()
             {
                 // Getting JSON longpoll object.
-                json.JsonLongpollServer longpollServer = JsonConvert.DeserializeObject<json.JsonLongpollServer>(APIMethod("groups.getLongPollServer"));
+                json.JsonLongpollServer longpollServer = JsonConvert.DeserializeObject<json.JsonLongpollServer>(methods.Methods.GetLongpollServer(this, 0));
 
                 // Setting server.
                 _longpollServer = new Dictionary<string, string>()
@@ -322,7 +322,7 @@ namespace vkapi
                 if (_longpollServer == null) GetServer();
 
                 // Getting response.
-                string _response = UrlGet($"{_longpollServer["server"]}?act=a_check&key={_longpollServer["key"]}&ts={_longpollServer["ts"]}&wait=25&mode=8&version=3");
+                string _response = utils.Url.Get($"{_longpollServer["server"]}?act=a_check&key={_longpollServer["key"]}&ts={_longpollServer["ts"]}&wait=25&mode=8&version=3");
 
                 Console.WriteLine(_response);
 
@@ -345,7 +345,7 @@ namespace vkapi
             protected override void GetServer()
             {
                 // Getting JSON longpoll object.
-                json.JsonLongpollServer longpollServer = JsonConvert.DeserializeObject<json.JsonLongpollServer>(APIMethod("messages.getLongPollServer"));
+                json.JsonLongpollServer longpollServer = JsonConvert.DeserializeObject<json.JsonLongpollServer>(methods.Methods.GetLongpollServer(this, 1));
 
                 // Setting server.
                 _longpollServer = new Dictionary<string, string>()
