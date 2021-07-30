@@ -44,7 +44,7 @@ namespace vkapi.examples
         /// <param name="e"> Event arguments (LongpollEventArgs)</param>
         private void CallbackMessageNew(object sender, LongpollEventArgs e)
         {
-            // Upcasting update event with type IEvent to EventMessageNew.
+            // Upcasting update event with type Event to EventMessageNew.
             // (As we want get message object).
             EventMessageNew.Message message = ((EventMessageNew)e.Update).message;
 

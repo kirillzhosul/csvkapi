@@ -1,6 +1,6 @@
 ﻿namespace vkapi.longpoll.events
 {
-    public class Event : IEvent
+    public class Event
     {
         /// Event base.
         /// Used as result when event is unknown.

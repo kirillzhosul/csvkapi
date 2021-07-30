@@ -23,7 +23,7 @@ namespace vkapi
         /// Will be called when got new event from longpoll.
         /// OBSOLETE!
         /// 
-        /// public delegate void CallbackDelegate(IEvent longpollEvent);
+        /// public delegate void CallbackDelegate(Event longpollEvent);
         ///
 
         public class LongpollEventArgs : EventArgs
@@ -31,7 +31,7 @@ namespace vkapi
             /// Longpoll event args for event handler.
 
             /// Update event itself.
-            public IEvent Update { get; set; }
+            public Event Update { get; set; }
         }
 
         /// Thrown when calling StopListeningLongpoll() when longpoll is not currently listening.
@@ -168,11 +168,11 @@ namespace vkapi
             #region Parsers.
 
             /// <summary>
-            /// Parses event to IEvent.
+            /// Parses event to Event.
             /// </summary>
             /// <param name="updateEvent">Update from server</param>
-            /// <returns>Upcasted event IEvent</returns>
-            protected IEvent ParseEvent(json.JsonLongpollUpdate updateEvent)
+            /// <returns>Upcasted event Event</returns>
+            protected Event ParseEvent(json.JsonLongpollUpdate updateEvent)
             {
                 // Parsing.
                 switch (updateEvent.type)

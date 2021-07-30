@@ -4,7 +4,7 @@
     {
         /// Uknown event.
         /// Used as result when event is unknown.
-        /// You should dont use this, please create new class even if you dont fill it for now.
+        /// You shouldn`t use this, please create new class even if you dont fill it for now.
 
         /// <summary>
         /// Constructor.

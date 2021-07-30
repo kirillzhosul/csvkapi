@@ -44,7 +44,7 @@ namespace vkapi.examples
         private void CallbackEvent(object sender, LongpollEventArgs e)
         {
             // Logging.
-            Console.WriteLine($"[Debug] Got new event IEvent! Type - {((EventIBase)e.Update).update.type}. Object - {((EventIBase)e.Update).update.object_}");
+            Console.WriteLine($"[Debug] Got new event! Type - {(e.Update).update.type}. Object - {(e.Update).update.object_}");
         }
     }
 }
